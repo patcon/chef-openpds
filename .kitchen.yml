@@ -1,0 +1,35 @@
+---
+driver:
+  name: docker
+
+provisioner:
+  name: chef_zero
+
+platforms:
+  - name: ubuntu-14.04
+
+driver_config:
+  require_chef_omnibus: false
+  provision_command:
+    # Solves issue with default mount permissions
+    - mkdir -p /tmp/kitchen && chmod 777 /tmp/kitchen
+    - curl -L https://www.opscode.com/chef/install.sh | bash -s -d /tmp/kitchen/cache/chef
+  # Rudimentary caching. Should consider moving to a .kitchen.local-caching.yml file
+  volume:
+    - <%= ENV['HOME'] %>/.vagrant.d/cache/ubuntu/trusty64/chef:/tmp/kitchen/cache
+    - <%= ENV['HOME'] %>/.vagrant.d/cache/ubuntu/trusty64/apt:/var/cache/apt
+
+suites:
+  - name: default
+    run_list:
+      - recipe[apt]
+      - recipe[python]
+      - recipe[postgresql::server]
+      - recipe[mongodb::10gen_repo]
+      - recipe[mongodb::default]
+      - recipe[openpds::default]
+    attributes:
+      postgresql:
+        config:
+          # Mitigate docker bug
+          ssl: false
